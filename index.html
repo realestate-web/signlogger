@@ -1,51 +1,79 @@
 <!DOCTYPE html>
 <html>
-<head><meta charset="utf-8"><title>Sign Logger POC</title></head>
-<body style="font-family:sans-serif; padding:1em; text-align:center;">
+<head>
+  <meta charset="utf-8">
+  <title>Sign Logger POC</title>
+  <style>
+    body { font-family: sans-serif; padding: 1em; text-align: center; }
+    select, textarea { width: 100%; margin-top: 0.5em; padding: 0.5em; }
+    button { font-size: 1.2em; padding: 0.5em 1em; margin-top: 1em; }
+  </style>
+</head>
+<body>
   <h1>🚀 SIGN LOGGER POC</h1>
   <h3>Logging Sign: <span id="sign">…</span></h3>
-  <p>Tap “Record Installation” and allow location access when prompted.</p>
-  <button id="recordBtn" style="font-size:1.2em; padding:.5em 1em;">
-    Record Installation
-  </button>
+
+  <p>
+    Installer:<br>
+    <select id="installer">
+      <option value="">(none)</option>
+      <option>JG</option>
+      <option>JB</option>
+      <option>CL</option>
+      <option>WC</option>
+    </select>
+  </p>
+
+  <p>
+    Notes:<br>
+    <textarea id="notes" rows="2" placeholder="Optional…"></textarea>
+  </p>
+
+  <button id="recordBtn">Record Installation</button>
+
   <script>
-  // 1) Read the sign ID from the URL
-  const sign = new URLSearchParams(location.search).get('sign') || 'UNKNOWN';
-  document.getElementById('sign').textContent = sign;
+    // 1) Read the sign ID from the URL
+    const params0 = new URLSearchParams(location.search);
+    const sign = params0.get('sign') || 'UNKNOWN';
+    document.getElementById('sign').textContent = sign;
 
-  document.getElementById('recordBtn').onclick = () => {
-    // Ask for location
-    navigator.geolocation.getCurrentPosition(position => {
-      const lat = position.coords.latitude;
-      const lng = position.coords.longitude;
+    document.getElementById('recordBtn').onclick = () => {
+      navigator.geolocation.getCurrentPosition(position => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
 
-      // Reverse-geocode to a street address
-      fetch(
-        `https://maps.googleapis.com/maps/api/geocode/json`
-        + `?latlng=${lat},${lng}`
-        + `&key=AIzaSyDYOE-sqSuFAIZgMhlJtNQLdBG0jcDHILQ`
-      )
-      .then(res => res.json())
-      .then(json => {
-        const address = json.results[0]?.formatted_address || '';
-        // 2) Redirect to your Apps-Script URL with all data in the query string
-        const scriptUrl = 
-          'https://script.google.com/macros/s/AKfycbzExAYZaUDnLgCkG2gHYTMbfo5--jHCmhl7rTrxawQmuKsle54Pyt6dTmOnVhJ3xUaqIA/exec';
-        const params = new URLSearchParams({
-          sign,
-          lat:     lat.toString(),
-          lng:     lng.toString(),
-          address
+        // Reverse-geocode to a street address
+        fetch(
+          `https://maps.googleapis.com/maps/api/geocode/json`
+          + `?latlng=${lat},${lng}`
+          + `&key=AIzaSyDYOE-sqSuFAIZgMhlJtNQLdBG0jcDHILQ`
+        )
+        .then(res => res.json())
+        .then(json => {
+          const address   = json.results[0]?.formatted_address || '';
+          const installer = document.getElementById('installer').value;
+          const notes     = document.getElementById('notes').value;
+
+          // Redirect to your Apps-Script URL with all data in the query string
+          const scriptUrl = 
+            'https://script.google.com/macros/s/AKfycbzExAYZaUDnLgCkG2gHYTMbfo5--jHCmhl7rTrxawQmuKsle54Pyt6dTmOnVhJ3xUaqIA/exec';
+          const params = new URLSearchParams({
+            sign,
+            lat:      lat.toString(),
+            lng:      lng.toString(),
+            address,
+            installer,
+            notes
+          });
+          window.location = scriptUrl + '?' + params.toString();
+        })
+        .catch(() => {
+          alert('Reverse-geocode failed; please try again.');
         });
-        window.location = scriptUrl + '?' + params.toString();
-      })
-      .catch(() => {
-        alert('Reverse-geocode failed; please try again.');
+      }, err => {
+        alert('Location error: ' + err.message);
       });
-    }, err => {
-      alert('Location error: ' + err.message);
-    });
-  };
-</script>
+    };
+  </script>
 </body>
 </html>
