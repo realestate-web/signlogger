@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Sign Logger POC</title></head>
+<body style="font-family:sans-serif; padding:1em; text-align:center;">
+  <h1>🚀 SIGN LOGGER POC</h1>
+  <h3>Logging Sign: <span id="sign">…</span></h3>
+  <p>Tap “Record Installation” and allow location access when prompted.</p>
+  <button id="recordBtn" style="font-size:1.2em; padding:.5em 1em;">
+    Record Installation
+  </button>
+  <script>
+    // 1) Read sign ID
+    const sign = new URLSearchParams(location.search).get('sign') || 'UNKNOWN';
+    document.getElementById('sign').textContent = sign;
+
+    document.getElementById('recordBtn').onclick = () => {
+      navigator.geolocation.getCurrentPosition(async pos => {
+        const lat = pos.coords.latitude, lng = pos.coords.longitude;
+        // Reverse-geocode
+        const geo = await fetch(
+          `https://maps.googleapis.com/maps/api/geocode/json`
+          + `?latlng=${lat},${lng}`
+          + `&key=AIzaSyDYOE-sqSuFAIZgMhlJtNQLdBG0jcDHILQ`
+        ).then(r=>r.json());
+        const address = geo.results?.[0]?.formatted_address||'';
+        // Append to sheet
+        await fetch(
+          'https://sheets.googleapis.com/v4/spreadsheets/1o7ZEB33XaqbaJLwZB8KFZ0x28Mm0j5JjXNtkbIZymX8/values/Master!D:G:append'
+          + '?valueInputOption=RAW&key=YOUR_SHEETS_API_KEY',
+          {
+            method:'POST',
+            headers:{ 'Content-Type':'application/json' },
+            body: JSON.stringify({ values:[[ new Date(), lat, lng, address ]] })
+          }
+        );
+        document.body.innerHTML = '<p>✅ Logged! You can close this tab.</p>';
+      }, err => {
+        alert('Location error: ' + err.message);
+      });
+    };
+  </script>
+</body>
+</html>
