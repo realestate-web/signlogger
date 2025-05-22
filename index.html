@@ -9,35 +9,43 @@
     Record Installation
   </button>
   <script>
-    // 1) Read sign ID
-    const sign = new URLSearchParams(location.search).get('sign') || 'UNKNOWN';
-    document.getElementById('sign').textContent = sign;
+  // 1) Read the sign ID from the URL
+  const sign = new URLSearchParams(location.search).get('sign') || 'UNKNOWN';
+  document.getElementById('sign').textContent = sign;
 
-    document.getElementById('recordBtn').onclick = () => {
-      navigator.geolocation.getCurrentPosition(async pos => {
-        const lat = pos.coords.latitude, lng = pos.coords.longitude;
-        // Reverse-geocode
-        const geo = await fetch(
-          `https://maps.googleapis.com/maps/api/geocode/json`
-          + `?latlng=${lat},${lng}`
-          + `&key=AIzaSyDYOE-sqSuFAIZgMhlJtNQLdBG0jcDHILQ`
-        ).then(r=>r.json());
-        const address = geo.results?.[0]?.formatted_address||'';
-        // Append to sheet
-        await fetch(
-          'https://sheets.googleapis.com/v4/spreadsheets/1o7ZEB33XaqbaJLwZB8KFZ0x28Mm0j5JjXNtkbIZymX8/values/Master!D:G:append'
-          + '?valueInputOption=RAW&key=YOUR_SHEETS_API_KEY',
-          {
-            method:'POST',
-            headers:{ 'Content-Type':'application/json' },
-            body: JSON.stringify({ values:[[ new Date(), lat, lng, address ]] })
-          }
-        );
-        document.body.innerHTML = '<p>✅ Logged! You can close this tab.</p>';
-      }, err => {
-        alert('Location error: ' + err.message);
+  document.getElementById('recordBtn').onclick = () => {
+    // Ask for location
+    navigator.geolocation.getCurrentPosition(position => {
+      const lat = position.coords.latitude;
+      const lng = position.coords.longitude;
+
+      // Reverse-geocode to a street address
+      fetch(
+        `https://maps.googleapis.com/maps/api/geocode/json`
+        + `?latlng=${lat},${lng}`
+        + `&key=AIzaSyDYOE-sqSuFAIZgMhlJtNQLdBG0jcDHILQ`
+      )
+      .then(res => res.json())
+      .then(json => {
+        const address = json.results[0]?.formatted_address || '';
+        // 2) Redirect to your Apps-Script URL with all data in the query string
+        const scriptUrl = 
+          'https://script.google.com/macros/s/AKfycbxgwPGcRGOMuxoKeUX24jPbT5ZCjRDKJJnl1MIs5077RQUT2ZnOY8X09QQCecmjmtZs/exec';
+        const params = new URLSearchParams({
+          sign,
+          lat:     lat.toString(),
+          lng:     lng.toString(),
+          address
+        });
+        window.location = scriptUrl + '?' + params.toString();
+      })
+      .catch(() => {
+        alert('Reverse-geocode failed; please try again.');
       });
-    };
-  </script>
+    }, err => {
+      alert('Location error: ' + err.message);
+    });
+  };
+</script>
 </body>
 </html>
