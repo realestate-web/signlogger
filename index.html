@@ -29,6 +29,27 @@
     <textarea id="notes" rows="2" placeholder="Optional…"></textarea>
   </p>
 
+  <p>
+    Condition:<br>
+    <select id="condition">
+      <option value="">(none)</option>
+      <option>OK</option>
+      <option>Fair</option>
+      <option>Poor</option>
+      <option>Needs repair</option>
+    </select>
+  </p>
+
+  <p>
+    Sign Type:<br>
+    <select id="signType">
+      <option value="">(none)</option>
+      <option>Small</option>
+      <option>Standard</option>
+      <option>Large</option>
+    </select>
+  </p>
+
   <button id="recordBtn">Record Installation</button>
 
   <script>
@@ -53,17 +74,21 @@
           const address   = json.results[0]?.formatted_address || '';
           const installer = document.getElementById('installer').value;
           const notes     = document.getElementById('notes').value;
+          const condition = document.getElementById('condition').value;
+          const signType  = document.getElementById('signType').value;
 
           // Redirect to your Apps-Script URL with all data in the query string
           const scriptUrl = 
             'https://script.google.com/macros/s/AKfycbzExAYZaUDnLgCkG2gHYTMbfo5--jHCmhl7rTrxawQmuKsle54Pyt6dTmOnVhJ3xUaqIA/exec';
           const params = new URLSearchParams({
             sign,
-            lat:      lat.toString(),
-            lng:      lng.toString(),
+            lat:       lat.toString(),
+            lng:       lng.toString(),
             address,
             installer,
-            notes
+            notes,
+            condition,
+            signType
           });
           window.location = scriptUrl + '?' + params.toString();
         })
