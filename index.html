@@ -1,3 +1,4 @@
+<!-- index.html -->
 <!DOCTYPE html>
 <html>
 <head>
@@ -5,6 +6,9 @@
   <title>Sign Logger POC</title>
   <style>
     body { font-family: sans-serif; padding: 1em; text-align: center; }
+    #history p { margin: 0.3em 0; }
+    #map, #photo { margin: 0.5em auto; }
+    #photo { width: 200px; height: 150px; background: #eee; display: block; }
     select, textarea { width: 100%; margin-top: 0.5em; padding: 0.5em; }
     button { font-size: 1.2em; padding: 0.5em 1em; margin-top: 1em; }
   </style>
@@ -12,92 +16,94 @@
 <body>
   <h1>🚀 SIGN LOGGER POC</h1>
   <h3>Logging Sign: <span id="sign">…</span></h3>
+  <p>Sign Size: <strong id="signType">…</strong></p>
 
+  <!-- History section -->
+  <div id="history">
+    <p>Last Installed By: <strong id="lastBy">–</strong></p>
+    <p>Last Installed On: <strong id="lastWhen">–</strong></p>
+    <p>Last Location: <strong id="lastLocation">–</strong></p>
+    <div id="map"></div>
+    <div id="photo">[photo placeholder]</div>
+  </div>
+
+  <!-- Installer inputs -->
   <p>
     Installer:<br>
     <select id="installer">
       <option value="">(none)</option>
-      <option>JG</option>
-      <option>JB</option>
-      <option>CL</option>
-      <option>WC</option>
+      <option>JG</option><option>JB</option>
+      <option>CL</option><option>WC</option>
     </select>
   </p>
-
   <p>
     Notes:<br>
     <textarea id="notes" rows="2" placeholder="Optional…"></textarea>
   </p>
-
   <p>
     Condition:<br>
     <select id="condition">
       <option value="">(none)</option>
-      <option>OK</option>
-      <option>Fair</option>
-      <option>Poor</option>
-      <option>Needs repair</option>
+      <option>OK</option><option>Fair</option>
+      <option>Poor</option><option>Needs repair</option>
     </select>
   </p>
-
-  <p>
-    Sign Type:<br>
-    <select id="signType">
-      <option value="">(none)</option>
-      <option>Small</option>
-      <option>Standard</option>
-      <option>Large</option>
-    </select>
-  </p>
-
   <button id="recordBtn">Record Installation</button>
 
   <script>
-    // 1) Read the sign ID from the URL
-    const params0 = new URLSearchParams(location.search);
-    const sign = params0.get('sign') || 'UNKNOWN';
-    document.getElementById('sign').textContent = sign;
+    const scriptUrl = 'https://script.google.com/macros/s/AKfycbzExAYZaUDnLgCkG2gHYTMbfo5--jHCmhl7rTrxawQmuKsle54Pyt6dTmOnVhJ3xUaqIA/exec';
+
+    // read sign and signType from URL
+    const params0  = new URLSearchParams(location.search);
+    const sign     = params0.get('sign')     || 'UNKNOWN';
+    const signType = params0.get('signType') || 'Unknown';
+    document.getElementById('sign').textContent     = sign;
+    document.getElementById('signType').textContent = signType;
+
+    // fetch last-scan history
+    fetch(`${scriptUrl}?action=fetch&sign=${encodeURIComponent(sign)}`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.timestamp) {
+          document.getElementById('lastBy').textContent      = data.installer || '—';
+          document.getElementById('lastWhen').textContent    = data.timestamp;
+          document.getElementById('lastLocation').textContent= data.address;
+          // embed static Google map
+          document.getElementById('map').innerHTML = 
+            `<img src="https://maps.googleapis.com/maps/api/staticmap?center=${data.lat},${data.lng}` +
+            `&zoom=18&size=300x150&markers=color:red|${data.lat},${data.lng}` +
+            `&key=AIzaSyDYOE-sqSuFAIZgMhlJtNQLdBG0jcDHILQ">`;
+        }
+      });
 
     document.getElementById('recordBtn').onclick = () => {
-      navigator.geolocation.getCurrentPosition(position => {
-        const lat = position.coords.latitude;
-        const lng = position.coords.longitude;
-
-        // Reverse-geocode to a street address
+      navigator.geolocation.getCurrentPosition(pos => {
+        const lat  = pos.coords.latitude, lng = pos.coords.longitude;
         fetch(
-          `https://maps.googleapis.com/maps/api/geocode/json`
-          + `?latlng=${lat},${lng}`
-          + `&key=AIzaSyDYOE-sqSuFAIZgMhlJtNQLdBG0jcDHILQ`
+          `https://maps.googleapis.com/maps/api/geocode/json` +
+          `?latlng=${lat},${lng}` +
+          `&key=AIzaSyDYOE-sqSuFAIZgMhlJtNQLdBG0jcDHILQ`
         )
-        .then(res => res.json())
+        .then(r => r.json())
         .then(json => {
           const address   = json.results[0]?.formatted_address || '';
           const installer = document.getElementById('installer').value;
           const notes     = document.getElementById('notes').value;
           const condition = document.getElementById('condition').value;
-          const signType  = document.getElementById('signType').value;
 
-          // Redirect to your Apps-Script URL with all data in the query string
-          const scriptUrl = 
-            'https://script.google.com/macros/s/AKfycbzExAYZaUDnLgCkG2gHYTMbfo5--jHCmhl7rTrxawQmuKsle54Pyt6dTmOnVhJ3xUaqIA/exec';
-          const params = new URLSearchParams({
-            sign,
-            lat:       lat.toString(),
-            lng:       lng.toString(),
+          const out = new URLSearchParams({
+            sign, signType,
+            lat:      lat.toString(),
+            lng:      lng.toString(),
             address,
             installer,
             notes,
-            condition,
-            signType
+            condition
           });
-          window.location = scriptUrl + '?' + params.toString();
+          window.location = scriptUrl + '?' + out.toString();
         })
-        .catch(() => {
-          alert('Reverse-geocode failed; please try again.');
-        });
-      }, err => {
-        alert('Location error: ' + err.message);
-      });
+        .catch(() => alert('Reverse‐geocode failed; please try again.'));
+      }, err => alert('Location error: ' + err.message));
     };
   </script>
 </body>
