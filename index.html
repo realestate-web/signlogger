@@ -7,27 +7,37 @@
   <style>
     body { font-family: sans-serif; padding: 1em; text-align: center; }
     #history p { margin: 0.3em 0; }
-    #map, #photo { margin: 0.5em auto; }
-    #photo { width: 200px; height: 150px; background: #eee; display: block; }
+    #map { margin: 0.5em auto; }
+    #photo {
+      margin: 0.5em auto;
+      width: 200px; height: 150px;
+      background: #eee;
+      display: block;
+      line-height: 150px;
+      color: #666;
+    }
     select, textarea { width: 100%; margin-top: 0.5em; padding: 0.5em; }
     button { font-size: 1.2em; padding: 0.5em 1em; margin-top: 1em; }
+    img.logo { max-width: 200px; margin: 1em auto; display: block; }
   </style>
 </head>
 <body>
-  <h1>🚀 SIGN LOGGER POC</h1>
+  <img class="logo"
+       src="https://remax-caymanislands-mikeb.com/wp-content/uploads/2019/04/remax_logo.png"
+       alt="RE/MAX Logo">
+  <h1>SIGN LOGGER POC</h1>
   <h3>Logging Sign: <span id="sign">…</span></h3>
-  <p>Sign Size: <strong id="signType">…</strong></p>
+  <p>Sign Size: <strong id="signSize">…</strong></p>
 
-  <!-- History section -->
   <div id="history">
-    <p>Last Installed By: <strong id="lastBy">–</strong></p>
-    <p>Last Installed On: <strong id="lastWhen">–</strong></p>
-    <p>Last Location: <strong id="lastLocation">–</strong></p>
+    <h4>Last Installation</h4>
+    <p>By: <strong id="lastBy">–</strong></p>
+    <p>On: <strong id="lastWhen">–</strong></p>
+    <p>At: <strong id="lastLocation">–</strong></p>
     <div id="map"></div>
     <div id="photo">[photo placeholder]</div>
   </div>
 
-  <!-- Installer inputs -->
   <p>
     Installer:<br>
     <select id="installer">
@@ -53,36 +63,41 @@
   <script>
     const scriptUrl = 'https://script.google.com/macros/s/AKfycbzExAYZaUDnLgCkG2gHYTMbfo5--jHCmhl7rTrxawQmuKsle54Pyt6dTmOnVhJ3xUaqIA/exec';
 
-    // read sign and signType from URL
-    const params0  = new URLSearchParams(location.search);
-    const sign     = params0.get('sign')     || 'UNKNOWN';
-    const signType = params0.get('signType') || 'Unknown';
+    // Read URL params
+    const params0   = new URLSearchParams(location.search);
+    const sign      = params0.get('sign')     || 'UNKNOWN';
+    const signType  = params0.get('signType') || 'Unknown';
     document.getElementById('sign').textContent     = sign;
-    document.getElementById('signType').textContent = signType;
+    document.getElementById('signSize').textContent = signType;
 
-    // fetch last-scan history
+    // Fetch last scan history
     fetch(`${scriptUrl}?action=fetch&sign=${encodeURIComponent(sign)}`)
       .then(r => r.json())
       .then(data => {
         if (data.timestamp) {
-          document.getElementById('lastBy').textContent      = data.installer || '—';
-          document.getElementById('lastWhen').textContent    = data.timestamp;
-          document.getElementById('lastLocation').textContent= data.address;
-          // embed static Google map
-          document.getElementById('map').innerHTML = 
-            `<img src="https://maps.googleapis.com/maps/api/staticmap?center=${data.lat},${data.lng}` +
-            `&zoom=18&size=300x150&markers=color:red|${data.lat},${data.lng}` +
-            `&key=AIzaSyDYOE-sqSuFAIZgMhlJtNQLdBG0jcDHILQ">`;
+          document.getElementById('lastBy').textContent       = data.installer || '–';
+          document.getElementById('lastWhen').textContent     = data.timestamp;
+          document.getElementById('lastLocation').textContent = data.address;
+          if (data.lat && data.lng) {
+            document.getElementById('map').innerHTML =
+              `<img src="https://maps.googleapis.com/maps/api/staticmap` +
+              `?center=${data.lat},${data.lng}` +
+              `&zoom=17&size=300x150&markers=color:red|${data.lat},${data.lng}` +
+              `&key=AIzaSyDYOE-sqSuFAIZgMhlJtNQLdBG0jcDHILQ">`;
+          }
         }
-      });
+      })
+      .catch(console.error);
 
+    // Record Installation
     document.getElementById('recordBtn').onclick = () => {
       navigator.geolocation.getCurrentPosition(pos => {
-        const lat  = pos.coords.latitude, lng = pos.coords.longitude;
-        fetch(
-          `https://maps.googleapis.com/maps/api/geocode/json` +
-          `?latlng=${lat},${lng}` +
-          `&key=AIzaSyDYOE-sqSuFAIZgMhlJtNQLdBG0jcDHILQ`
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+
+        fetch(`https://maps.googleapis.com/maps/api/geocode/json`
+          + `?latlng=${lat},${lng}`
+          + `&key=AIzaSyDYOE-sqSuFAIZgMhlJtNQLdBG0jcDHILQ`
         )
         .then(r => r.json())
         .then(json => {
@@ -93,16 +108,14 @@
 
           const out = new URLSearchParams({
             sign, signType,
-            lat:      lat.toString(),
-            lng:      lng.toString(),
-            address,
-            installer,
-            notes,
-            condition
+            lat:       lat.toString(),
+            lng:       lng.toString(),
+            address, installer,
+            notes, condition
           });
           window.location = scriptUrl + '?' + out.toString();
         })
-        .catch(() => alert('Reverse‐geocode failed; please try again.'));
+        .catch(() => alert('Reverse-geocode failed; please try again.'));
       }, err => alert('Location error: ' + err.message));
     };
   </script>
