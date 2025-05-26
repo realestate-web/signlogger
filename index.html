@@ -1,27 +1,72 @@
-<!-- index.html -->
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
   <title>Sign Logger POC</title>
   <style>
-    body { font-family: sans-serif; padding: 1em; text-align: center; }
-    img.logo { max-width: 200px; margin: 1em auto; display: block; }
-    #history { margin-bottom: 1em; }
-    #history p { margin: 0.3em 0; }
-    #map img { max-width: 90vw; height: auto; display: block; margin: 0.5em auto; }
-    #photo { display: none; max-width: 90vw; height: auto; margin: 0.5em auto; }
-    select, textarea {
-      width: 80%;
-      max-width: 400px;
+    :root {
+      --remax-blue:   #003da5;
+      --remax-red:    #d6001c;
+      --text-charcoal:#333333;
+      --bg:           #f5f5f5;
+    }
+    body {
+      font-family: sans-serif;
+      background: var(--bg);
+      color: var(--text-charcoal);
+      padding: 1em;
+      text-align: center;
+    }
+    img.logo {
+      max-width: 200px;
+      margin: 1em auto;
+      display: block;
+    }
+    h2, h3, h4 { margin: 0.3em 0; }
+    #history { 
+      background: white;
+      border: 2px solid var(--remax-blue);
+      padding: 0.5em;
+      margin-bottom: 1em;
+      border-radius: 4px;
+    }
+    #history p { margin: 0.2em 0; }
+    #map img {
+      max-width: 90vw; height: auto;
+      border: 1px solid var(--remax-blue);
+      border-radius: 4px;
       margin: 0.5em auto;
       display: block;
     }
-    button {
-      font-size: 1.2em;
-      padding: 0.5em 1em;
-      margin: 1em auto;
+    #photo {
+      max-width: 90vw; height: auto;
+      border: 1px dashed var(--remax-red);
+      border-radius: 4px;
+      margin: 0.5em auto;
+      display: none;
+    }
+    select, textarea {
+      width: 80%; max-width: 400px;
+      margin: 0.5em auto;
       display: block;
+      padding: 0.5em;
+      border: 2px solid var(--remax-red);
+      border-radius: 4px;
+      font-size: 1em;
+      color: var(--text-charcoal);
+    }
+    button {
+      background: var(--remax-blue);
+      color: white;
+      border: none;
+      padding: 0.7em 1.5em;
+      font-size: 1.1em;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-top: 1em;
+    }
+    button:hover {
+      background: #002f80;
     }
   </style>
 </head>
@@ -67,29 +112,22 @@
     document.getElementById('sign').textContent     = sign;
     document.getElementById('signSize').textContent = signType;
 
-    // Fetch last-scan history
+    // Fetch last scan
     fetch(`${scriptUrl}?action=fetch&sign=${encodeURIComponent(sign)}`)
-      .then(r => r.json())
-      .then(data => {
+      .then(r => r.json()).then(data => {
         if (data.timestamp) {
           document.getElementById('lastBy').textContent       = data.installer || '–';
           document.getElementById('lastWhen').textContent     = data.timestamp;
           document.getElementById('lastLocation').textContent = data.address;
           if (data.lat && data.lng) {
             document.getElementById('map').innerHTML =
-              `<img src="https://maps.googleapis.com/maps/api/staticmap`
-              + `?center=${data.lat},${data.lng}`
-              + `&zoom=17&size=300x150&markers=color:red|${data.lat},${data.lng}`
-              + `&key=AIzaSyDYOE-sqSuFAIZgMhlJtNQLdBG0jcDHILQ">`;
-          }
-          if (data.photoUrl) {
-            const img = document.getElementById('photo');
-            img.src = data.photoUrl;
-            img.style.display = 'block';
+              `<img src="https://maps.googleapis.com/maps/api/staticmap` +
+              `?center=${data.lat},${data.lng}` +
+              `&zoom=17&size=300x150&markers=color:red|${data.lat},${data.lng}` +
+              `&key=AIzaSyDYOE-sqSuFAIZgMhlJtNQLdBG0jcDHILQ">`;
           }
         }
-      })
-      .catch(console.error);
+      }).catch(console.error);
 
     // Record Installation
     document.getElementById('recordBtn').onclick = () => {
@@ -98,9 +136,7 @@
         fetch(`https://maps.googleapis.com/maps/api/geocode/json`
           + `?latlng=${lat},${lng}`
           + `&key=AIzaSyDYOE-sqSuFAIZgMhlJtNQLdBG0jcDHILQ`
-        )
-        .then(r => r.json())
-        .then(json => {
+        ).then(r => r.json()).then(json => {
           const address   = json.results[0]?.formatted_address || '';
           const installer = document.getElementById('installer').value;
           const notes     = document.getElementById('notes').value;
@@ -116,8 +152,7 @@
             condition
           });
           window.location = scriptUrl + '?' + out.toString();
-        })
-        .catch(() => alert('Reverse-geocode failed; please try again.'));
+        }).catch(() => alert('Reverse-geocode failed.'));
       }, err => alert('Location error: ' + err.message));
     };
   </script>
