@@ -1,237 +1,67 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>RE/MAX: Sign and Delivery</title>
-  <style>
-    :root {
-      --remax-blue:    #003da5;
-      --charcoal:      #333333;
-      --bg-light:      #f5f5f5;
-      --white:         #ffffff;
-    }
-    body {
-      margin: 0;
-      font-family: sans-serif;
-      background: var(--bg-light);
-      color: var(--charcoal);
-    }
-    header {
-      background: var(--white);
-      padding: 1em 0;
-      text-align: center;
-    }
-    img.logo { max-width: 200px; }
-    main {
-      background: var(--remax-blue);
-      color: var(--white);
-      padding: 1em;
-      padding-bottom: 3em; /* ensure button can scroll into view */
-    }
-    #info-box {
-      position: relative;
-      background: rgba(255,255,255,0.1);
-      border: 2px solid var(--charcoal);
-      padding: 1em;
-      margin: 0 auto 1em;
-      border-radius: 4px;
-      max-width: 500px;
-      text-align: left;
-    }
-    #info-box h1 {
-      margin: 0 0 0.5em;
-      font-size: 1.5em;
-      text-align: center;
-      letter-spacing: 1px;
-    }
-    #info-box h3, #info-box p, #info-box h4 {
-      margin: 0.3em 0;
-    }
-    #message {
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      background: #4caf50; /* green */
-      color: white;
-      padding: 0.5em;
-      text-align: center;
-      font-weight: bold;
-      display: none;
-      border-radius: 2px 2px 0 0;
-    }
-    #map img {
-      width: 100%;
-      height: auto;
-      border-radius: 4px;
-      margin: 0.5em 0;
-      display: block;
-    }
-    #photo {
-      display: none;
-      width: 100%;
-      height: auto;
-      border: 1px dashed var(--charcoal);
-      border-radius: 4px;
-      margin: 0.5em 0;
-    }
-    select, textarea {
-      width: 70%;
-      max-width: 350px;
-      margin: 0.5em auto;
-      display: block;
-      padding: 0.5em;
-      border: 2px solid var(--charcoal);
-      border-radius: 4px;
-      font-size: 1em;
-      color: var(--charcoal);
-    }
-    textarea {
-      width: 65%;
-      max-width: 325px;
-      height: 80px;
-    }
-    button {
-      background: var(--white);
-      color: var(--charcoal);
-      border: 2px solid var(--charcoal);
-      padding: 0.7em 1.5em;
-      font-size: 1.1em;
-      border-radius: 4px;
-      cursor: pointer;
-      margin: 1em auto;
-      display: block;
-    }
-    button:hover {
-      background: var(--charcoal);
-      color: var(--white);
-    }
-  </style>
+  <!-- (keep all your existing head, styles, etc.) -->
 </head>
 <body>
-  <header>
-    <img class="logo"
-         src="https://remax-caymanislands-mikeb.com/wp-content/uploads/2019/04/remax_logo.png"
-         alt="RE/MAX Logo">
-  </header>
+  <!-- (header + info-box + summary code unchanged) -->
 
-  <main>
-    <div id="info-box">
-      <div id="message">✅ Logged!</div>
-      <h1>RE/MAX: SIGN AND DELIVERY</h1>
-      <h3>Logging Sign: <span id="sign">…</span></h3>
-      <p>Sign Size: <strong id="signSize">…</strong></p>
-      <h4>Last Installation</h4>
-      <p>By: <strong id="lastBy">–</strong></p>
-      <p>On: <strong id="lastWhen">–</strong></p>
-      <p>At: <strong id="lastLocation">–</strong></p>
-      <p>Condition: <strong id="lastCondition">–</strong></p>
-      <div id="map"></div>
-      <img id="photo" alt="Sign photo">
-    </div>
+  <!-- Hidden form that we’ll populate and submit -->
+  <form id="logForm" method="GET" target="hiddenFrame" style="display:none">
+    <input name="sign">
+    <input name="signType">
+    <input name="lat">
+    <input name="lng">
+    <input name="address">
+    <input name="installer">
+    <input name="notes">
+    <input name="condition">
+  </form>
+  <iframe name="hiddenFrame" style="display:none"></iframe>
 
-    <select id="installer">
-      <option value="">Installer (none)</option>
-      <option>JG</option><option>JB</option>
-      <option>CL</option><option>WC</option>
-    </select>
-
-    <select id="condition">
-      <option value="">Condition (none)</option>
-      <option>OK</option>
-      <option>Fair</option>
-      <option>Poor</option>
-      <option>Replace</option>
-    </select>
-
-    <textarea id="notes" placeholder="Notes (optional)…"></textarea>
-
-    <button id="recordBtn">Record Installation</button>
-  </main>
+  <!-- Your visible inputs -->
+  <select id="installer"> … </select>
+  <select id="condition"> … </select>
+  <textarea id="notes"> … </textarea>
+  <button id="recordBtn">Record Installation</button>
 
   <script>
     const scriptUrl = 'https://script.google.com/macros/s/AKfycbzExAYZaUDnLgCkG2gHYTMbfo5--jHCmhl7rTrxawQmuKsle54Pyt6dTmOnVhJ3xUaqIA/exec';
     const params    = new URLSearchParams(location.search);
+    const sign      = params.get('sign')     || 'UNKNOWN';
+    const signType  = params.get('signType') || 'Unknown';
+    document.getElementById('sign').textContent     = sign;
+    document.getElementById('signSize').textContent = signType;
 
-    const signEl    = document.getElementById('sign');
-    const sizeEl    = document.getElementById('signSize');
-    const condEl    = document.getElementById('lastCondition');
-    const messageEl = document.getElementById('message');
-
-    const sign       = params.get('sign') || 'UNKNOWN';
-    const initialSize = params.get('signType') || 'Unknown';
-    signEl.textContent     = sign;
-    sizeEl.textContent     = initialSize;
-
-    async function refreshSummary() {
-      try {
-        const res  = await fetch(`${scriptUrl}?action=fetch&sign=${encodeURIComponent(sign)}`);
-        const data = await res.json();
-        if (data.timestamp) {
-          document.getElementById('lastBy').textContent       = data.installer || '–';
-          document.getElementById('lastWhen').textContent     = data.timestamp;
-          document.getElementById('lastLocation').textContent = data.address;
-          condEl.textContent = data.condition || '–';
-          if (data.signType) sizeEl.textContent = data.signType;
-          if (data.lat && data.lng) {
-            document.getElementById('map').innerHTML =
-              `<img src="https://maps.googleapis.com/maps/api/staticmap?center=${data.lat},${data.lng}` +
-              `&zoom=17&size=300x150&markers=color:red|${data.lat},${data.lng}` +
-              `&key=AIzaSyDYOE-sqSuFAIZgMhlJtNQLdBG0jcDHILQ">`;
-          }
-          if (data.photoUrl) {
-            const img = document.getElementById('photo');
-            img.src = data.photoUrl;
-            img.style.display = 'block';
-          }
-        }
-      } catch (e) {
-        console.error(e);
-      }
-    }
-
-    // initial load
+    // initial summary load (unchanged)
     refreshSummary();
 
     document.getElementById('recordBtn').onclick = () => {
       navigator.geolocation.getCurrentPosition(async pos => {
-        const lat = pos.coords.latitude, lng = pos.coords.longitude;
         let address = '';
         try {
-          const geoRes = await fetch(
-            `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}` +
-            `&key=AIzaSyDYOE-sqSuFAIZgMhlJtNQLdBG0jcDHILQ`
-          );
-          const geoJson = await geoRes.json();
-          address = geoJson.results[0]?.formatted_address || '';
-        } catch (_) {
-          // ignore geocode errors
-        }
+          const geo = await fetch(
+            `https://maps.googleapis.com/maps/api/geocode/json`
+            + `?latlng=${pos.coords.latitude},${pos.coords.longitude}`
+            + `&key=AIzaSyDYOE-sqSuFAIZgMhlJtNQLdBG0jcDHILQ`
+          ).then(r=>r.json());
+          address = geo.results[0]?.formatted_address||'';
+        } catch(e){}
 
-        const installer = document.getElementById('installer').value;
-        const condition = document.getElementById('condition').value;
-        const notes     = document.getElementById('notes').value;
+        // Populate and submit hidden form
+        const form      = document.getElementById('logForm');
+        form.action     = scriptUrl;
+        form.sign.value     = sign;
+        form.signType.value = signType;
+        form.lat.value      = pos.coords.latitude;
+        form.lng.value      = pos.coords.longitude;
+        form.address.value  = address;
+        form.installer.value= document.getElementById('installer').value;
+        form.notes.value    = document.getElementById('notes').value;
+        form.condition.value= document.getElementById('condition').value;
 
-        const outParams = new URLSearchParams({
-          sign,
-          signType: sizeEl.textContent,
-          lat:       lat.toString(),
-          lng:       lng.toString(),
-          address,
-          installer,
-          notes,
-          condition
-        }).toString();
-
-        const iframe = document.createElement('iframe');
-        iframe.style.display = 'none';
-        iframe.onload = () => {
-          messageEl.style.display = 'block';
-          setTimeout(() => messageEl.style.display = 'none', 2000);
-          refreshSummary();
-          document.body.removeChild(iframe);
-        };
-        document.body.appendChild(iframe);
-        iframe.src = `${scriptUrl}?${outParams}`;
+        form.submit();
+        // the Apps Script response will redirect the top window
       }, err => alert('Location error: ' + err.message));
     };
   </script>
