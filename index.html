@@ -35,12 +35,10 @@
       background: rgba(255,255,255,0.1);
       border: 2px solid var(--charcoal);
       padding: 1em;
-      margin-bottom: 1em;
+      margin: 0 auto 1em;
       border-radius: 4px;
-      text-align: left;
       max-width: 500px;
-      margin-left: auto;
-      margin-right: auto;
+      text-align: left;
     }
     #info-box h1 {
       margin: 0 0 0.5em;
@@ -51,15 +49,20 @@
     #info-box h3, #info-box p, #info-box h4 {
       margin: 0.3em 0;
     }
-    #map img, #photo {
-      max-width: 90vw;
+    #map img {
+      width: 100%;
       height: auto;
       border-radius: 4px;
-      margin: 0.5em auto;
+      margin: 0.5em 0;
       display: block;
     }
     #photo {
       display: none;
+      width: 100%;
+      height: auto;
+      border: 1px dashed var(--charcoal);
+      border-radius: 4px;
+      margin: 0.5em 0;
     }
     select, textarea {
       width: 70%;
@@ -72,7 +75,11 @@
       font-size: 1em;
       color: var(--charcoal);
     }
-    textarea { height: 80px; }
+    textarea {
+      width: 65%;
+      max-width: 325px;
+      height: 80px;
+    }
     button {
       background: var(--white);
       color: var(--charcoal);
@@ -99,8 +106,8 @@
 
   <main>
     <div id="info-box">
-      <h1>SIGN AND DELIVERY</h1>
-      <h3>Logging Sign: <span id="sign">…</span></h3>
+      <h1>SIGN AND DELIVER</h1>
+      <h3>Sign: <span id="sign">…</span></h3>
       <p>Sign Size: <strong id="signSize">…</strong></p>
       <h4>Last Installation</h4>
       <p>By: <strong id="lastBy">–</strong></p>
@@ -145,10 +152,10 @@
           }
           if (data.lat && data.lng) {
             document.getElementById('map').innerHTML =
-              `<img src="https://maps.googleapis.com/maps/api/staticmap`
-              + `?center=${data.lat},${data.lng}`
-              + `&zoom=17&size=300x150&markers=color:red|${data.lat},${data.lng}`
-              + `&key=AIzaSyDYOE-sqSuFAIZgMhlJtNQLdBG0jcDHILQ">`;
+              `<img src="https://maps.googleapis.com/maps/api/staticmap` +
+              `?center=${data.lat},${data.lng}` +
+              `&zoom=17&size=300x150&markers=color:red|${data.lat},${data.lng}` +
+              `&key=AIzaSyDYOE-sqSuFAIZgMhlJtNQLdBG0jcDHILQ">`;
           }
           if (data.photoUrl) {
             const img = document.getElementById('photo');
