@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Sign and Deliver</title>
+  <title>RE/MAX: Sign and Delivery</title>
   <style>
     :root {
       --remax-blue:    #003da5;
@@ -117,7 +117,7 @@
   <main>
     <div id="info-box">
       <div id="message">✅ Logged!</div>
-      <h1>SIGN AND DELIVER</h1>
+      <h1>RE/MAX: SIGN AND DELIVERY</h1>
       <h3>Logging Sign: <span id="sign">…</span></h3>
       <p>Sign Size: <strong id="signSize">…</strong></p>
       <h4>Last Installation</h4>
@@ -137,8 +137,10 @@
 
     <select id="condition">
       <option value="">Condition (none)</option>
-      <option>OK</option><option>Fair</option>
-      <option>Poor</option><option>Needs repair</option>
+      <option>OK</option>
+      <option>Fair</option>
+      <option>Poor</option>
+      <option>Replace</option>
     </select>
 
     <textarea id="notes" placeholder="Notes (optional)…"></textarea>
@@ -156,8 +158,9 @@
     const messageEl = document.getElementById('message');
 
     const sign       = params.get('sign') || 'UNKNOWN';
+    const initialSize = params.get('signType') || 'Unknown';
     signEl.textContent     = sign;
-    sizeEl.textContent     = params.get('signType') || 'Unknown';
+    sizeEl.textContent     = initialSize;
 
     async function refreshSummary() {
       try {
@@ -186,53 +189,51 @@
       }
     }
 
-    // initial
+    // initial load
     refreshSummary();
 
     document.getElementById('recordBtn').onclick = () => {
-      navigator.geolocation.getCurrentPosition(pos => {
+      navigator.geolocation.getCurrentPosition(async pos => {
         const lat = pos.coords.latitude, lng = pos.coords.longitude;
-        // attempt geocode, but always proceed
-        fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}` +
-              `&key=AIzaSyDYOE-sqSuFAIZgMhlJtNQLdBG0jcDHILQ`)
-        .then(r => r.json())
-        .then(json => {
-          const address = json.results[0]?.formatted_address || '';
-          logScan(address);
-        })
-        .catch(() => {
-          // silently fallback
-          logScan('');
-        });
+        let address = '';
+        try {
+          const geoRes = await fetch(
+            `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}` +
+            `&key=AIzaSyDYOE-sqSuFAIZgMhlJtNQLdBG0jcDHILQ`
+          );
+          const geoJson = await geoRes.json();
+          address = geoJson.results[0]?.formatted_address || '';
+        } catch (_) {
+          // ignore geocode errors
+        }
+
+        const installer = document.getElementById('installer').value;
+        const condition = document.getElementById('condition').value;
+        const notes     = document.getElementById('notes').value;
+
+        const outParams = new URLSearchParams({
+          sign,
+          signType: sizeEl.textContent,
+          lat:       lat.toString(),
+          lng:       lng.toString(),
+          address,
+          installer,
+          notes,
+          condition
+        }).toString();
+
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.onload = () => {
+          messageEl.style.display = 'block';
+          setTimeout(() => messageEl.style.display = 'none', 2000);
+          refreshSummary();
+          document.body.removeChild(iframe);
+        };
+        document.body.appendChild(iframe);
+        iframe.src = `${scriptUrl}?${outParams}`;
       }, err => alert('Location error: ' + err.message));
     };
-
-    function logScan(address) {
-      const installer = document.getElementById('installer').value;
-      const condition = document.getElementById('condition').value;
-      const notes     = document.getElementById('notes').value;
-      const outParams = new URLSearchParams({
-        sign,
-        signType: sizeEl.textContent,
-        lat:       String(address ? '' : ''), // latitude/lon not passed here
-        lng:       String(address ? '' : ''),
-        address,
-        installer,
-        notes,
-        condition
-      }).toString();
-      // hidden iframe logging
-      const iframe = document.createElement('iframe');
-      iframe.style.display = 'none';
-      iframe.onload = () => {
-        messageEl.style.display = 'block';
-        setTimeout(() => messageEl.style.display = 'none', 2000);
-        refreshSummary();
-        document.body.removeChild(iframe);
-      };
-      document.body.appendChild(iframe);
-      iframe.src = `${scriptUrl}?${outParams}`;
-    }
   </script>
 </body>
 </html>
