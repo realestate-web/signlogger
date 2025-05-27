@@ -1,3 +1,6 @@
+### Updated index.html
+
+```html
 <!DOCTYPE html>
 <html>
 <head>
@@ -29,8 +32,7 @@
       background: var(--remax-blue);
       color: var(--white);
       padding: 1em;
-      padding-bottom: 3em;        /* ensure button can scroll fully into view */
-      /* removed min-height to prevent clipping on short viewports */
+      padding-bottom: 3em;
     }
     #info-box {
       background: rgba(255,255,255,0.1);
@@ -43,12 +45,16 @@
     }
     #info-box h1 {
       margin: 0 0 0.5em;
-      font-size: 1.5em;
+      font-size: 1.8em;
       text-align: center;
       letter-spacing: 1px;
     }
     #info-box h3, #info-box p, #info-box h4 {
       margin: 0.3em 0;
+    }
+    /* Increase Sign ID label size */
+    #info-box h3 {
+      font-size: 1.5em;
     }
     #map img {
       width: 100%;
@@ -108,7 +114,8 @@
   <main>
     <div id="info-box">
       <h1>SIGN AND DELIVERY</h1>
-      <h3>Sign: <span id="sign">…</span></h3>
+      <h3>Sign ID: <span id="sign">…</span></h3>
+      <p>Type: <strong id="type">…</strong></p>
       <p>Sign Size: <strong id="signSize">…</strong></p>
       <h4>Last Installation</h4>
       <p>By: <strong id="lastBy">–</strong></p>
@@ -152,12 +159,16 @@
           if (data.signType) {
             document.getElementById('signSize').textContent = data.signType;
           }
+          if (data.type) {
+            document.getElementById('type').textContent = data.type;
+          }
           if (data.lat && data.lng) {
             document.getElementById('map').innerHTML =
+              `<a href="https://www.google.com/maps?q=${data.lat},${data.lng}" target="_blank">` +
               `<img src="https://maps.googleapis.com/maps/api/staticmap` +
               `?center=${data.lat},${data.lng}` +
               `&zoom=17&size=300x150&markers=color:red|${data.lat},${data.lng}` +
-              `&key=AIzaSyDYOE-sqSuFAIZgMhlJtNQLdBG0jcDHILQ">`;
+              `&key=AIzaSyDYOE-sqSuFAIZgMhlJtNQLdBG0jcDHILQ"></a>`;
           }
           if (data.photoUrl) {
             const img = document.getElementById('photo');
@@ -183,6 +194,7 @@
           const out = new URLSearchParams({
             sign,
             signType: document.getElementById('signSize').textContent,
+            type: document.getElementById('type').textContent,
             lat:       lat.toString(),
             lng:       lng.toString(),
             address,
@@ -196,5 +208,115 @@
       }, err => alert('Location error: ' + err.message));
     };
   </script>
+```
+
+### Updated Code.gs
+
+```js
+const SHEET_ID   = '1o7ZEB33XaqbaJLwZB8KFZ0x28Mm0j5JjXNtkbIZymX8';
+const SHEET_NAME = 'Master';
+
+function doGet(e) {
+  // 1) Fetch last scan data
+  if (e.parameter.action === 'fetch' && e.parameter.sign) {
+    const ss = SpreadsheetApp.openById(SHEET_ID);
+    const sh = ss.getSheetByName(SHEET_NAME);
+    const ids = sh.getRange(2,1,sh.getLastRow()-1).getValues().flat();
+    const idx = ids.indexOf(e.parameter.sign);
+    if (idx < 0) {
+      return ContentService.createTextOutput('{}')
+                           .setMimeType(ContentService.MimeType.JSON);
+    }
+    const row = idx + 2;
+    const tsCell    = sh.getRange(row,4).getValue();
+    const timestamp = tsCell instanceof Date
+      ? Utilities.formatDate(tsCell, Session.getScriptTimeZone(), "dd MMM yyyy HH:mm")
+      : '';
+    const payload = {
+      sign:      e.parameter.sign,
+      timestamp: timestamp,
+      lat:       sh.getRange(row,5).getValue(),
+      lng:       sh.getRange(row,6).getValue(),
+      address:   sh.getRange(row,7).getValue(),
+      installer: sh.getRange(row,8).getValue(),
+      notes:     sh.getRange(row,9).getValue(),
+      type:      sh.getRange(row,10).getValue(),  // Column J
+      condition: sh.getRange(row,11).getValue(),
+      signType:  sh.getRange(row,12).getValue()
+    };
+    return ContentService.createTextOutput(JSON.stringify(payload))
+                         .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // 2) Log new scan
+  if (e.parameter.sign && e.parameter.lat) {
+    const data = {
+      sign:      e.parameter.sign,
+      lat:       e.parameter.lat,
+      lng:       e.parameter.lng      || '',
+      address:   e.parameter.address  || '',
+      installer: e.parameter.installer|| '',
+      notes:     e.parameter.notes    || '',
+      type:      e.parameter.type     || '',  // capture Column J
+      condition: e.parameter.condition|| '',
+      signType:  e.parameter.signType || ''
+    };
+    logScan(data);
+    return HtmlService.createHtmlOutputFromFile('success')
+                      .setTitle('Logged Successfully');
+  }
+
+  // 3) Serve the installer page
+  return HtmlService.createHtmlOutputFromFile('index')
+                    .setTitle('Sign Logger POC');
+}
+
+function logScan(data) {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  const sh = ss.getSheetByName(SHEET_NAME);
+  const ids = sh.getRange(2,1,sh.getLastRow()-1).getValues().flat();
+  const idx = ids.indexOf(data.sign);
+  if (idx < 0) return;
+  const row = idx + 2;
+
+  sh.getRange(row,4).setValue(new Date());
+  sh.getRange(row,5).setValue(data.lat);
+  sh.getRange(row,6).setValue(data.lng);
+  sh.getRange(row,7).setValue(data.address);
+  sh.getRange(row,8).setValue(data.installer);
+  sh.getRange(row,9).setValue(data.notes);
+  sh.getRange(row,10).setValue(data.type);      // Column J
+  sh.getRange(row,11).setValue(data.condition);
+  sh.getRange(row,12).setValue(data.signType);
+}
+```
+
+### New success.html
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Logged Successfully</title>
+  <style>
+    /* same styles as index.html */
+    :root { --remax-blue: #003da5; --white: #ffffff; --charcoal: #333333; --bg-light: #f5f5f5; }
+    body { margin:0; font-family:sans-serif; background:var(--bg-light); color:var(--charcoal); }
+    header { background:var(--white); padding:1em 0; text-align:center; }
+    img.logo { max-width:200px; }
+    main { background:var(--remax-blue); color:var(--white); padding:2em; text-align:center; }
+    main p { font-size:1.2em; margin:0; }
+  </style>
+</head>
+<body>
+  <header>
+    <img class="logo" src="https://remax-caymanislands-mikeb.com/wp-content/uploads/2019/04/remax_logo.png" alt="RE/MAX Logo">
+  </header>
+  <main>
+    <p>✅ Successfully logged, you may now close this page.</p>
+  </main>
 </body>
 </html>
+```
