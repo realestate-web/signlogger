@@ -19,22 +19,31 @@
     }
     header {
       background: var(--white);
-      padding: 1em 0;
+      padding: 1em;
       text-align: center;
+      position: relative;
     }
     img.logo {
       max-width: 200px;
+      vertical-align: middle;
     }
-    /* Coverage link styling */
-    header a {
-      display: inline-block;
-      margin-top: 0.5em;
-      color: var(--remax-blue);
+    /* Styled button-like link */
+    a#coverageLink {
+      position: absolute;
+      top: 50%;
+      right: 1em;
+      transform: translateY(-50%);
+      background: var(--remax-blue);
+      color: var(--white);
+      padding: 0.5em 1em;
+      border-radius: 4px;
       text-decoration: none;
       font-weight: bold;
+      border: 2px solid var(--charcoal);
     }
-    header a:hover {
-      text-decoration: underline;
+    a#coverageLink:hover {
+      background: var(--white);
+      color: var(--charcoal);
     }
     main {
       background: var(--remax-blue);
@@ -61,8 +70,7 @@
       margin: 0.3em 0;
       font-size: 1.5em; /* larger Sign ID */
     }
-    #info-box p,
-    #info-box h4 {
+    #info-box p, #info-box h4 {
       margin: 0.3em 0;
     }
     #map img {
@@ -118,11 +126,8 @@
     <img class="logo"
          src="https://remax-caymanislands-mikeb.com/wp-content/uploads/2019/04/remax_logo.png"
          alt="RE/MAX Logo">
-    <br>
-    <a href="https://script.google.com/macros/s/AKfycbzExAYZaUDnLgCkG2gHYTMbfo5--jHCmhl7rTrxawQmuKsle54Pyt6dTmOnVhJ3xUaqIA/exec?action=coverage"
-       target="_blank">
-      View All Signs on Map
-    </a>
+    <!-- will set href dynamically via JS -->
+    <a id="coverageLink" target="_blank">View All Signs</a>
   </header>
 
   <main>
@@ -162,34 +167,36 @@
 
   <script>
     const scriptUrl = 'https://script.google.com/macros/s/AKfycbzExAYZaUDnLgCkG2gHYTMbfo5--jHCmhl7rTrxawQmuKsle54Pyt6dTmOnVhJ3xUaqIA/exec';
-    const params    = new URLSearchParams(location.search);
-    const sign      = params.get('sign') || 'UNKNOWN';
-    const initialType = params.get('type') || '';
+    // wire up the coverage link
+    document.getElementById('coverageLink').href = `${scriptUrl}?action=coverage`;
 
-    // populate initial placeholders
+    const params = new URLSearchParams(location.search);
+    const sign   = params.get('sign')       || 'UNKNOWN';
+    const initType = params.get('type')     || '';
+
+    // initial placeholders
     document.getElementById('sign').textContent     = sign;
-    document.getElementById('type').textContent     = initialType;
+    document.getElementById('type').textContent     = initType;
     document.getElementById('signSize').textContent = params.get('signType') || 'Unknown';
 
-    // fetch last record for this sign
+    // fetch the last record
     fetch(`${scriptUrl}?action=fetch&sign=${encodeURIComponent(sign)}`)
       .then(r => r.json())
       .then(data => {
-        if (!data.timestamp) return;  // nothing to show yet
+        console.log('FETCHED DATA:', data);
+        // always update condition (even if timestamp is missing)
+        document.getElementById('conditionSummary').textContent = data.condition || '–';
 
-        // fill in last-install fields
+        // if no timestamp yet, skip the rest
+        if (!data.timestamp) return;
+
         document.getElementById('lastBy').textContent       = data.installer   || '–';
         document.getElementById('lastWhen').textContent     = data.timestamp   || '–';
         document.getElementById('lastLocation').textContent = data.address     || '–';
 
-        // <<-- this ensures Condition is shown
-        document.getElementById('conditionSummary').textContent = data.condition || '–';
-
-        // update Type & Size if changed
         if (data.type)     document.getElementById('type').textContent     = data.type;
         if (data.signType) document.getElementById('signSize').textContent = data.signType;
 
-        // render clickable static map
         if (data.lat && data.lng) {
           document.getElementById('map').innerHTML =
             `<a href="https://www.google.com/maps?q=${data.lat},${data.lng}" target="_blank">` +
@@ -199,14 +206,13 @@
             `&key=AIzaSyDYOE-sqSuFAIZgMhlJtNQLdBG0jcDHILQ">` +
             `</a>`;
         }
-        // display photo if available
         if (data.photoUrl) {
           const img = document.getElementById('photo');
           img.src = data.photoUrl;
           img.style.display = 'block';
         }
       })
-      .catch(console.error);
+      .catch(err => console.error('Fetch Error:', err));
 
     // record a new installation
     document.getElementById('recordBtn').onclick = () => {
@@ -233,8 +239,6 @@
             notes,
             condition
           });
-
-          // navigate to log endpoint, which will serve success.html
           window.location = scriptUrl + '?' + out.toString();
         })
         .catch(() => alert('Reverse-geocode failed; please try again.'));
