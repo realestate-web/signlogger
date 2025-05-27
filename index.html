@@ -1,4 +1,3 @@
-<!-- index.html -->
 <!DOCTYPE html>
 <html>
 <head>
@@ -12,31 +11,106 @@
       --bg-light:   #f5f5f5;
       --white:      #ffffff;
     }
-    body { margin: 0; font-family: sans-serif; background: var(--bg-light); color: var(--charcoal); }
-    header { background: var(--white); padding: 1em 0; text-align: center; }
-    img.logo { max-width: 200px; }
-    main { background: var(--remax-blue); color: var(--white); padding: 1em; padding-bottom: 3em; }
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      background: var(--bg-light);
+      color: var(--charcoal);
+    }
+    header {
+      background: var(--white);
+      padding: 1em 0;
+      text-align: center;
+    }
+    img.logo {
+      max-width: 200px;
+    }
+    /* Coverage link styling */
+    header a {
+      display: inline-block;
+      margin-top: 0.5em;
+      color: var(--remax-blue);
+      text-decoration: none;
+      font-weight: bold;
+    }
+    header a:hover {
+      text-decoration: underline;
+    }
+    main {
+      background: var(--remax-blue);
+      color: var(--white);
+      padding: 1em;
+      padding-bottom: 3em;
+    }
     #info-box {
-      background: rgba(255,255,255,0.1); border: 2px solid var(--charcoal);
-      padding: 1em; margin: 0 auto 1em; border-radius: 4px; max-width: 500px; text-align: left;
+      background: rgba(255,255,255,0.1);
+      border: 2px solid var(--charcoal);
+      padding: 1em;
+      margin: 0 auto 1em;
+      border-radius: 4px;
+      max-width: 500px;
+      text-align: left;
     }
-    #info-box h1 { margin: 0 0 0.5em; font-size: 1.8em; text-align: center; letter-spacing: 1px; }
-    #info-box h3 { margin: 0.3em 0; font-size: 1.5em; } /* larger Sign ID */
-    #info-box p, #info-box h4 { margin: 0.3em 0; }
-    #map img { width: 100%; height: auto; border-radius:4px; margin:0.5em 0; display:block; }
-    #photo { display:none; width:100%; height:auto; border:1px dashed var(--charcoal); border-radius:4px; margin:0.5em 0; }
+    #info-box h1 {
+      margin: 0 0 0.5em;
+      font-size: 1.8em;
+      text-align: center;
+      letter-spacing: 1px;
+    }
+    #info-box h3 {
+      margin: 0.3em 0;
+      font-size: 1.5em; /* larger Sign ID */
+    }
+    #info-box p,
+    #info-box h4 {
+      margin: 0.3em 0;
+    }
+    #map img {
+      width: 100%;
+      height: auto;
+      border-radius: 4px;
+      margin: 0.5em 0;
+      display: block;
+    }
+    #photo {
+      display: none;
+      width: 100%;
+      height: auto;
+      border: 1px dashed var(--charcoal);
+      border-radius: 4px;
+      margin: 0.5em 0;
+    }
     select, textarea {
-      width:70%; max-width:350px; margin:0.5em auto; display:block;
-      padding:0.5em; border:2px solid var(--charcoal); border-radius:4px;
-      font-size:1em; color:var(--charcoal);
+      width: 70%;
+      max-width: 350px;
+      margin: 0.5em auto;
+      display: block;
+      padding: 0.5em;
+      border: 2px solid var(--charcoal);
+      border-radius: 4px;
+      font-size: 1em;
+      color: var(--charcoal);
     }
-    textarea { width:65%; max-width:325px; height:80px; }
+    textarea {
+      width: 65%;
+      max-width: 325px;
+      height: 80px;
+    }
     button {
-      background:var(--white); color:var(--charcoal); border:2px solid var(--charcoal);
-      padding:0.7em 1.5em; font-size:1.1em; border-radius:4px; cursor:pointer;
-      margin:1em auto; display:block;
+      background: var(--white);
+      color: var(--charcoal);
+      border: 2px solid var(--charcoal);
+      padding: 0.7em 1.5em;
+      font-size: 1.1em;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 1em auto;
+      display: block;
     }
-    button:hover { background:var(--charcoal); color:var(--white); }
+    button:hover {
+      background: var(--charcoal);
+      color: var(--white);
+    }
   </style>
 </head>
 <body>
@@ -44,77 +118,97 @@
     <img class="logo"
          src="https://remax-caymanislands-mikeb.com/wp-content/uploads/2019/04/remax_logo.png"
          alt="RE/MAX Logo">
-    <a href="https://script.google.com/macros/s/.../exec?action=coverage" target="_blank">
-  View All Signs on Map
-</a>
+    <br>
+    <a href="https://script.google.com/macros/s/AKfycbzExAYZaUDnLgCkG2gHYTMbfo5--jHCmhl7rTrxawQmuKsle54Pyt6dTmOnVhJ3xUaqIA/exec?action=coverage"
+       target="_blank">
+      View All Signs on Map
+    </a>
   </header>
+
   <main>
     <div id="info-box">
       <h1>SIGN AND DELIVERY</h1>
       <h3>Sign ID: <span id="sign">…</span></h3>
-      <p>Type: <strong id="type">…</strong></p>
-      <p>Sign Size: <strong id="signSize">…</strong></p>
+      <p>Type:       <strong id="type">…</strong></p>
+      <p>Sign Size:  <strong id="signSize">…</strong></p>
       <p>Condition:  <strong id="conditionSummary">…</strong></p>
       <h4>Last Installation</h4>
-      <p>By: <strong id="lastBy">–</strong></p>
-      <p>On: <strong id="lastWhen">–</strong></p>
-      <p>At: <strong id="lastLocation">–</strong></p>
+      <p>By:         <strong id="lastBy">–</strong></p>
+      <p>On:         <strong id="lastWhen">–</strong></p>
+      <p>At:         <strong id="lastLocation">–</strong></p>
       <div id="map"></div>
       <img id="photo" alt="Sign photo">
     </div>
 
     <select id="installer">
       <option value="">Installer (none)</option>
-      <option>JG</option><option>JB</option>
-      <option>CL</option><option>WC</option>
+      <option>JG</option>
+      <option>JB</option>
+      <option>CL</option>
+      <option>WC</option>
     </select>
 
     <select id="condition">
       <option value="">Condition (none)</option>
-      <option>OK</option><option>Fair</option>
-      <option>Poor</option><option>Needs repair</option>
+      <option>OK</option>
+      <option>Fair</option>
+      <option>Poor</option>
+      <option>Needs repair</option>
     </select>
 
     <textarea id="notes" placeholder="Notes (optional)…"></textarea>
-
     <button id="recordBtn">Record Installation</button>
   </main>
 
   <script>
     const scriptUrl = 'https://script.google.com/macros/s/AKfycbzExAYZaUDnLgCkG2gHYTMbfo5--jHCmhl7rTrxawQmuKsle54Pyt6dTmOnVhJ3xUaqIA/exec';
     const params    = new URLSearchParams(location.search);
-    const sign      = params.get('sign')       || 'UNKNOWN';
-    const initialType = params.get('type')     || '';
+    const sign      = params.get('sign') || 'UNKNOWN';
+    const initialType = params.get('type') || '';
+
+    // populate initial placeholders
     document.getElementById('sign').textContent     = sign;
     document.getElementById('type').textContent     = initialType;
     document.getElementById('signSize').textContent = params.get('signType') || 'Unknown';
 
+    // fetch last record for this sign
     fetch(`${scriptUrl}?action=fetch&sign=${encodeURIComponent(sign)}`)
       .then(r => r.json())
       .then(data => {
-        if (data.timestamp) {
-          document.getElementById('lastBy').textContent       = data.installer || '–';
-          document.getElementById('lastWhen').textContent     = data.timestamp;
-          document.getElementById('lastLocation').textContent = data.address;
-          if (data.signType) document.getElementById('signSize').textContent = data.signType;
-          if (data.type)     document.getElementById('type').textContent     = data.type;
-          if (data.lat && data.lng) {
-            document.getElementById('map').innerHTML =
-              `<a href="https://www.google.com/maps?q=${data.lat},${data.lng}" target="_blank">` +
-              `<img src="https://maps.googleapis.com/maps/api/staticmap` +
-              `?center=${data.lat},${data.lng}` +
-              `&zoom=17&size=300x150&markers=color:red|${data.lat},${data.lng}` +
-              `&key=AIzaSyDYOE-sqSuFAIZgMhlJtNQLdBG0jcDHILQ"></a>`;
-          }
-          if (data.photoUrl) {
-            const img = document.getElementById('photo');
-            img.src = data.photoUrl;
-            img.style.display = 'block';
-          }
+        if (!data.timestamp) return;  // nothing to show yet
+
+        // fill in last-install fields
+        document.getElementById('lastBy').textContent       = data.installer   || '–';
+        document.getElementById('lastWhen').textContent     = data.timestamp   || '–';
+        document.getElementById('lastLocation').textContent = data.address     || '–';
+
+        // <<-- this ensures Condition is shown
+        document.getElementById('conditionSummary').textContent = data.condition || '–';
+
+        // update Type & Size if changed
+        if (data.type)     document.getElementById('type').textContent     = data.type;
+        if (data.signType) document.getElementById('signSize').textContent = data.signType;
+
+        // render clickable static map
+        if (data.lat && data.lng) {
+          document.getElementById('map').innerHTML =
+            `<a href="https://www.google.com/maps?q=${data.lat},${data.lng}" target="_blank">` +
+            `<img src="https://maps.googleapis.com/maps/api/staticmap` +
+            `?center=${data.lat},${data.lng}` +
+            `&zoom=17&size=300x150&markers=color:red|${data.lat},${data.lng}` +
+            `&key=AIzaSyDYOE-sqSuFAIZgMhlJtNQLdBG0jcDHILQ">` +
+            `</a>`;
+        }
+        // display photo if available
+        if (data.photoUrl) {
+          const img = document.getElementById('photo');
+          img.src = data.photoUrl;
+          img.style.display = 'block';
         }
       })
       .catch(console.error);
 
+    // record a new installation
     document.getElementById('recordBtn').onclick = () => {
       navigator.geolocation.getCurrentPosition(pos => {
         const lat = pos.coords.latitude, lng = pos.coords.longitude;
@@ -127,6 +221,7 @@
           const installer = document.getElementById('installer').value;
           const condition = document.getElementById('condition').value;
           const notes     = document.getElementById('notes').value;
+
           const out = new URLSearchParams({
             sign,
             type:     document.getElementById('type').textContent,
@@ -138,6 +233,8 @@
             notes,
             condition
           });
+
+          // navigate to log endpoint, which will serve success.html
           window.location = scriptUrl + '?' + out.toString();
         })
         .catch(() => alert('Reverse-geocode failed; please try again.'));
