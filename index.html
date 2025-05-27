@@ -1,73 +1,93 @@
-// Code.gs (Apps Script)
-const SHEET_ID   = '1o7ZEB33XaqbaJLwZB8KFZ0x28Mm0j5JjXNtkbIZymX8';
-const SHEET_NAME = 'Master';
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>RE/MAX: Sign and Delivery</title>
+  <link rel="icon" href="https://raw.githubusercontent.com/realestate-web/signlogger/main/favicon-light.png"
+        media="(prefers-color-scheme: light)">
+  <link rel="icon" href="https://raw.githubusercontent.com/realestate-web/signlogger/main/favicon-dark.png"
+        media="(prefers-color-scheme: dark)">
+  <style>
+    /* your CSS from before */
+  </style>
+</head>
+<body>
+  <!-- your header + summary box + inputs -->
+  <script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const MAPS_KEY  = 'AIzaSyDYOE-sqSuFAIZgMhlJtNQLdBG0jcDHILQ';
+    const SCRIPT    = 'https://script.google.com/macros/s/AKfycbzExAYZaUDnLgCkG2gHYTMbfo5--jHCmhl7rTrxawQmuKsle54Pyt6dTmOnVhJ3xUaqIA/exec';
+    const qs        = new URLSearchParams(location.search);
+    const sign      = qs.get('sign')     || 'UNKNOWN';
+    const signType  = qs.get('signType') || '';
 
-function doGet(e) {
-  const cb = e.parameter.callback;
-  // JSONP fetch
-  if (e.parameter.action==='fetch' && e.parameter.sign && cb) {
-    const ss = SpreadsheetApp.openById(SHEET_ID);
-    const sh = ss.getSheetByName(SHEET_NAME);
-    const ids = sh.getRange(2,1,sh.getLastRow()-1).getValues().flat();
-    const idx = ids.indexOf(e.parameter.sign);
-    let payload = {};
-    if (idx>=0) {
-      const row = idx+2;
-      const t = sh.getRange(row,4).getValue();
-      payload = {
-        sign:      e.parameter.sign,
-        timestamp: t instanceof Date
-          ? Utilities.formatDate(t, Session.getScriptTimeZone(),"dd MMM yyyy HH:mm")
-          : '',
-        lat:       sh.getRange(row,5).getValue(),
-        lng:       sh.getRange(row,6).getValue(),
-        address:   sh.getRange(row,7).getValue(),
-        installer: sh.getRange(row,8).getValue(),
-        notes:     sh.getRange(row,9).getValue(),
-        type:      sh.getRange(row,10).getValue(),
-        condition: sh.getRange(row,11).getValue(),
-        signType:  sh.getRange(row,12).getValue()
-      };
-    }
-    return ContentService
-      .createTextOutput(`${cb}(${JSON.stringify(payload)})`)
-      .setMimeType(ContentService.MimeType.JAVASCRIPT);
-  }
-  // JSONP log
-  if (e.parameter.sign && e.parameter.lat && e.parameter.callback) {
-    const data = {
-      sign:      e.parameter.sign,
-      lat:       e.parameter.lat,
-      lng:       e.parameter.lng||'',
-      address:   e.parameter.address||'',
-      installer: e.parameter.installer||'',
-      notes:     e.parameter.notes||'',
-      type:      e.parameter.type||'',
-      condition: e.parameter.condition||'',
-      signType:  e.parameter.signType||''
+    // initial UI
+    document.getElementById('sign').textContent     = sign;
+    document.getElementById('signSize').textContent = signType;
+
+    // JSONP fetch callback
+    window.renderSummary = data => {
+      if (!data.timestamp) return;
+      document.getElementById('lastBy').textContent        = data.installer;
+      document.getElementById('lastWhen').textContent      = data.timestamp;
+      document.getElementById('lastLocation').textContent  = data.address;
+      document.getElementById('lastCondition').textContent = data.condition;
+      document.getElementById('lastType').textContent      = data.type;
+      if (data.signType) document.getElementById('signSize').textContent = data.signType;
+      if (data.lat && data.lng) {
+        document.getElementById('map').innerHTML =
+          `<img src="https://maps.googleapis.com/maps/api/staticmap`
+          + `?center=${data.lat},${data.lng}`
+          + `&zoom=17&size=300x150`
+          + `&markers=color:red|${data.lat},${data.lng}`
+          + `&key=${MAPS_KEY}">`;
+      }
     };
-    logScan(data);
-    return ContentService
-      .createTextOutput(`${e.parameter.callback}(${JSON.stringify({status:'ok'})})`)
-      .setMimeType(ContentService.MimeType.JAVASCRIPT);
-  }
-  return ContentService.createTextOutput('');
-}
 
-function logScan(data) {
-  const ss = SpreadsheetApp.openById(SHEET_ID);
-  const sh = ss.getSheetByName(SHEET_NAME);
-  const ids = sh.getRange(2,1,sh.getLastRow()-1).getValues().flat();
-  const idx = ids.indexOf(data.sign);
-  if (idx<0) return;
-  const row = idx+2;
-  sh.getRange(row,4).setValue(new Date());
-  sh.getRange(row,5).setValue(data.lat);
-  sh.getRange(row,6).setValue(data.lng);
-  sh.getRange(row,7).setValue(data.address);
-  sh.getRange(row,8).setValue(data.installer);
-  sh.getRange(row,9).setValue(data.notes);
-  sh.getRange(row,10).setValue(data.type);
-  sh.getRange(row,11).setValue(data.condition);
-  sh.getRange(row,12).setValue(data.signType);
-}
+    // fire initial JSONP
+    const fetchScript = document.createElement('script');
+    fetchScript.src = `${SCRIPT}?action=fetch&sign=${encodeURIComponent(sign)}&callback=renderSummary`;
+    document.body.appendChild(fetchScript);
+
+    // record-install handler
+    document.getElementById('recordBtn').onclick = () => {
+      navigator.geolocation.getCurrentPosition(pos => {
+        const lat = pos.coords.latitude, lng = pos.coords.longitude;
+        // geocode
+        fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${MAPS_KEY}`)
+          .then(r => r.json())
+          .then(js => {
+            const addr = js.results[0]?.formatted_address||'';
+            const cb   = '__logged__';
+            window[cb] = resp => {
+              if (resp.status==='ok') {
+                document.getElementById('message').style.display='block';
+                setTimeout(()=>document.getElementById('message').style.display='none',2000);
+                const refetch = document.createElement('script');
+                refetch.src = `${SCRIPT}?action=fetch&sign=${encodeURIComponent(sign)}&callback=renderSummary`;
+                document.body.appendChild(refetch);
+              }
+              delete window[cb];
+            };
+            const params = [
+              `sign=${encodeURIComponent(sign)}`,
+              `signType=${encodeURIComponent(signType)}`,
+              `lat=${lat}`, `lng=${lng}`,
+              `address=${encodeURIComponent(addr)}`,
+              `installer=${encodeURIComponent(document.getElementById('installer').value)}`,
+              `notes=${encodeURIComponent(document.getElementById('notes').value)}`,
+              `type=${encodeURIComponent(qs.get('type')||'')}`,
+              `condition=${encodeURIComponent(document.getElementById('condition').value)}`,
+              `callback=${cb}`
+            ].join('&');
+            const logScript = document.createElement('script');
+            logScript.src = `${SCRIPT}?${params}`;
+            document.body.appendChild(logScript);
+          });
+      }, err => alert('Location error:' + err.message));
+    };
+  });
+  </script>
+</body>
+</html>
