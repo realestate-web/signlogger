@@ -4,96 +4,123 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>RE/MAX: Sign and Delivery</title>
-  <link rel="icon" 
+  <link rel="icon"
         href="https://raw.githubusercontent.com/realestate-web/signlogger/main/favicon-light.png"
         media="(prefers-color-scheme: light)">
-  <link rel="icon" 
+  <link rel="icon"
         href="https://raw.githubusercontent.com/realestate-web/signlogger/main/favicon-dark.png"
         media="(prefers-color-scheme: dark)">
   <style>
-    body { margin:0; font-family:sans-serif; text-align:center; }
-    header { padding:1em; }
-    h1 { margin:0.5em 0; }
-    .field { margin:0.5em 0; }
-    select,textarea,button { font-size:1em; padding:0.5em; margin:0.3em; }
-    textarea { width:80%; height:60px; }
+    :root { --blue:#003da5; --gray:#333; --light:#f5f5f5; --white:#fff }
+    body { margin:0; font-family:sans-serif; background:var(--light); color:var(--gray); text-align:center }
+    header { background:var(--white); padding:1em }
+    img.logo { max-width:200px }
+    main { padding:1em; }
+    .box { background:var(--blue); color:var(--white); padding:1em; border-radius:6px; max-width:500px; margin:0 auto }
+    .box h1 { margin-top:0; }
+    .field { margin:0.5em 0; text-align:left }
+    .field strong { display:inline-block; width:110px }
+    select, textarea, button { font-size:1em; padding:0.5em; margin:0.5em 0; width:90%; max-width:300px }
+    textarea { height:60px }
+    button { width:auto; cursor:pointer }
+    #message { display:none; color:green; margin:1em 0; font-weight:bold }
+    #map img { width:100%; height:auto; border-radius:4px; margin-top:1em }
   </style>
 </head>
 <body>
   <header>
-    <img src="https://remax-caymanislands-mikeb.com/wp-content/uploads/2019/04/remax_logo.png"
-         alt="RE/MAX Logo" style="max-width:200px;">
+    <img class="logo"
+         src="https://remax-caymanislands-mikeb.com/wp-content/uploads/2019/04/remax_logo.png"
+         alt="RE/MAX Logo">
   </header>
 
-  <h1>SIGN AND DELIVERY</h1>
+  <main>
+    <div class="box">
+      <h1>SIGN AND DELIVERY</h1>
+      <div id="message">✅ Logged!</div>
 
-  <div class="field">
-    <strong>Sign ID:</strong> <span id="sign">…</span>
-  </div>
-  <div class="field">
-    <strong>Sign Size:</strong> <span id="signSize">…</span>
-  </div>
-  <div class="field">
-    <strong>Type:</strong> <span id="type">–</span>
-  </div>
+      <div class="field"><strong>Sign ID:</strong> <span id="sign">…</span></div>
+      <div class="field"><strong>Size:</strong> <span id="signSize">…</span></div>
+      <div class="field"><strong>Type:</strong> <span id="type">–</span></div>
 
-  <div class="field">
+      <h2 style="margin-top:1em; text-align:left">Last Installation</h2>
+      <div class="field"><strong>By:</strong> <span id="lastBy">–</span></div>
+      <div class="field"><strong>On:</strong> <span id="lastWhen">–</span></div>
+      <div class="field"><strong>At:</strong> <span id="lastLocation">–</span></div>
+      <div class="field"><strong>Condition:</strong> <span id="lastCondition">–</span></div>
+
+      <div id="map"></div>
+    </div>
+
     <select id="installer">
       <option value="">Installer (none)</option>
       <option>JG</option><option>JB</option>
       <option>CL</option><option>WC</option>
     </select>
-  </div>
 
-  <div class="field">
     <select id="condition">
       <option value="">Condition (none)</option>
       <option>OK</option><option>Fair</option>
       <option>Poor</option><option>Replace</option>
     </select>
-  </div>
 
-  <div class="field">
     <textarea id="notes" placeholder="Notes (optional)…"></textarea>
-  </div>
 
-  <div class="field">
     <button id="recordBtn">Record Installation</button>
-  </div>
+  </main>
 
   <script>
-    // On load, fill in Sign details from URL
-    const params    = new URLSearchParams(location.search);
-    const sign      = params.get('sign')     || '';
-    const signType  = params.get('signType') || '';
-    const type      = params.get('type')     || '';
+  document.addEventListener('DOMContentLoaded', () => {
+    const MAPS_KEY = 'AIzaSyDYOE-sqSuFAIZgMhlJtNQLdBG0jcDHILQ';
+    const SCRIPT   = 'https://script.google.com/macros/s/AKfycbzExAYZaUDnLgCkG2gHYTMbfo5--jHCmhl7rTrxawQmuKsle54Pyt6dTmOnVhJ3xUaqIA/exec';
+    const ps       = new URLSearchParams(location.search);
+    const sign     = ps.get('sign')     || '';
+    const signSize = ps.get('signType') || '';
+    const type     = ps.get('type')     || '';
+    // populate fields
     document.getElementById('sign').textContent     = sign;
-    document.getElementById('signSize').textContent = signType;
+    document.getElementById('signSize').textContent = signSize;
     document.getElementById('type').textContent     = type;
+    // fetch last scan
+    navigator.geolocation.getCurrentPosition(() => {}, ()=>{}, {}); // just ensure geolocation prompt
+    // reverse‐geocode & then get summary via redirect
+    function loadSummary() {
+      const cb = '__sum__';
+      window[cb] = data => {
+        if (!data.timestamp) return;
+        document.getElementById('lastBy').textContent        = data.installer;
+        document.getElementById('lastWhen').textContent      = data.timestamp;
+        document.getElementById('lastLocation').textContent  = data.address;
+        document.getElementById('lastCondition').textContent = data.condition;
+        delete window[cb];
+      };
+      const s = document.createElement('script');
+      s.src = `${SCRIPT}?action=fetch&sign=${encodeURIComponent(sign)}&callback=${cb}`;
+      document.body.appendChild(s);
+    }
+    loadSummary();
 
-    // On click, get geo + reverse-geocode, then redirect to Apps-Script
-    document.getElementById('recordBtn').addEventListener('click', () => {
+    // record install
+    document.getElementById('recordBtn').onclick = () => {
       navigator.geolocation.getCurrentPosition(pos => {
-        const lat = pos.coords.latitude, lng = pos.coords.longitude;
-        fetch(
-          `https://maps.googleapis.com/maps/api/geocode/json`
-          + `?latlng=${lat},${lng}`
-          + `&key=AIzaSyDYOE-sqSuFAIZgMhlJtNQLdBG0jcDHILQ`
-        ).then(res => res.json()).then(js => {
-          const address = js.results[0]?.formatted_address || '';
-          const installer = encodeURIComponent(document.getElementById('installer').value);
-          const condition = encodeURIComponent(document.getElementById('condition').value);
-          const notes     = encodeURIComponent(document.getElementById('notes').value);
-          const qs = new URLSearchParams({
-            sign, signType, type,
-            lat: lat.toString(), lng: lng.toString(),
-            address, installer, condition, notes
+        const {latitude:lat,longitude:lng} = pos.coords;
+        fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${MAPS_KEY}`)
+          .then(r=>r.json())
+          .then(js => {
+            const address = js.results[0]?.formatted_address||'';
+            // redirect to log and show Apps-Script page
+            const qs = new URLSearchParams({
+              sign, signType, type,
+              lat, lng, address,
+              installer: document.getElementById('installer').value,
+              condition: document.getElementById('condition').value,
+              notes: document.getElementById('notes').value
+            });
+            window.location = SCRIPT + '?' + qs.toString();
           });
-          window.location = 'https://script.google.com/macros/s/AKfycbzExAYZaUDnLgCkG2gHYTMbfo5--jHCmhl7rTrxawQmuKsle54Pyt6dTmOnVhJ3xUaqIA/exec'
-                            + '?' + qs.toString();
-        });
-      }, err => alert('Location error: ' + err.message));
-    });
+      }, err=>alert('Location error: '+err.message));
+    };
+  });
   </script>
 </body>
 </html>
