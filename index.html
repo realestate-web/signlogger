@@ -25,7 +25,7 @@
       text-align: left;
     }
     #info-box h1 { margin:0 0 .5em; font-size:1.8em; text-align:center; letter-spacing:1px; }
-    #info-box h3 { margin:.3em 0; font-size:1.5em; }  /* larger Sign ID */
+    #info-box h3 { margin:.3em 0; font-size:1.5em; }
     #info-box p, #info-box h4 { margin:.3em 0; }
     #map img { width:100%; height:auto; border-radius:4px; margin:.5em 0; display:block; }
     #photo { display:none; width:100%; height:auto; border:1px dashed var(--charcoal); border-radius:4px; margin:.5em 0; }
@@ -87,35 +87,36 @@
     const scriptUrl = 'https://script.google.com/macros/s/AKfycbzExAYZaUDnLgCkG2gHYTMbfo5--jHCmhl7rTrxawQmuKsle54Pyt6dTmOnVhJ3xUaqIA/exec';
     const params    = new URLSearchParams(location.search);
     const sign      = params.get('sign')       || 'UNKNOWN';
-    const initialType = params.get('type')     || '';
-    document.getElementById('sign').textContent            = sign;
-    document.getElementById('type').textContent            = initialType;
-    document.getElementById('signSize').textContent        = params.get('signType') || 'Unknown';
-    document.getElementById('conditionSummary').textContent = '';  // blank until fetch
+    document.getElementById('sign').textContent     = sign;
+    document.getElementById('type').textContent     = params.get('type')     || '…';
+    document.getElementById('signSize').textContent = params.get('signType') || '…';
+    // leave the placeholder “…” in conditionSummary
 
     fetch(`${scriptUrl}?action=fetch&sign=${encodeURIComponent(sign)}`)
       .then(r => r.json())
       .then(data => {
-        if (data.timestamp) {
-          document.getElementById('lastBy').textContent        = data.installer   || '–';
-          document.getElementById('lastWhen').textContent      = data.timestamp   || '–';
-          document.getElementById('lastLocation').textContent  = data.address     || '–';
-          if (data.signType)    document.getElementById('signSize').textContent        = data.signType;
-          if (data.type)        document.getElementById('type').textContent            = data.type;
-          if (data.condition)   document.getElementById('conditionSummary').textContent = data.condition;
-          if (data.lat && data.lng) {
-            document.getElementById('map').innerHTML =
-              `<a href="https://www.google.com/maps?q=${data.lat},${data.lng}" target="_blank">` +
-              `<img src="https://maps.googleapis.com/maps/api/staticmap` +
-              `?center=${data.lat},${data.lng}` +
-              `&zoom=17&size=300x150&markers=color:red|${data.lat},${data.lng}` +
-              `&key=AIzaSyDYOE-sqSuFAIZgMhlJtNQLdBG0jcDHILQ"></a>`;
-          }
-          if (data.photoUrl) {
-            const img = document.getElementById('photo');
-            img.src = data.photoUrl;
-            img.style.display = 'block';
-          }
+        if (!data.timestamp) return;
+        document.getElementById('lastBy').textContent       = data.installer || '–';
+        document.getElementById('lastWhen').textContent     = data.timestamp || '–';
+        document.getElementById('lastLocation').textContent = data.address   || '–';
+
+        // always set these, falling back to “…” if empty
+        document.getElementById('type').textContent            = data.type     || '…';
+        document.getElementById('signSize').textContent        = data.signType || '…';
+        document.getElementById('conditionSummary').textContent = data.condition || '…';
+
+        if (data.lat && data.lng) {
+          document.getElementById('map').innerHTML =
+            `<a href="https://www.google.com/maps?q=${data.lat},${data.lng}" target="_blank">`+
+            `<img src="https://maps.googleapis.com/maps/api/staticmap`+
+            `?center=${data.lat},${data.lng}`+
+            `&zoom=17&size=300x150&markers=color:red|${data.lat},${data.lng}`+
+            `&key=AIzaSyDYOE-sqSuFAIZgMhlJtNQLdBG0jcDHILQ"></a>`;
+        }
+        if (data.photoUrl) {
+          const img = document.getElementById('photo');
+          img.src = data.photoUrl;
+          img.style.display = 'block';
         }
       })
       .catch(console.error);
@@ -123,8 +124,8 @@
     document.getElementById('recordBtn').onclick = () => {
       navigator.geolocation.getCurrentPosition(pos => {
         const lat = pos.coords.latitude, lng = pos.coords.longitude;
-        fetch(`https://maps.googleapis.com/maps/api/geocode/json` +
-              `?latlng=${lat},${lng}` +
+        fetch(`https://maps.googleapis.com/maps/api/geocode/json`+
+              `?latlng=${lat},${lng}`+
               `&key=AIzaSyDYOE-sqSuFAIZgMhlJtNQLdBG0jcDHILQ`)
         .then(r => r.json())
         .then(json => {
@@ -142,3 +143,12 @@
             installer,
             notes,
             condition
+          });
+          window.location = scriptUrl + '?' + out.toString();
+        })
+        .catch(() => alert('Reverse-geocode failed; please try again.'));
+      }, err => alert('Location error: ' + err.message));
+    };
+  </script>
+</body>
+</html>
