@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -9,24 +9,49 @@
   <link rel="icon" href="https://raw.githubusercontent.com/realestate-web/signlogger/main/favicon-dark.png"
         media="(prefers-color-scheme: dark)">
   <style>
-    /* your CSS from before */
+    /* (your CSS from before) */
   </style>
 </head>
 <body>
-  <!-- your header + summary box + inputs -->
+  <header>
+    <img class="logo"
+         src="https://remax-caymanislands-mikeb.com/wp-content/uploads/2019/04/remax_logo.png"
+         alt="RE/MAX Logo">
+  </header>
+
+  <main>
+    <div id="info-box">
+      <div id="message">✅ Logged!</div>
+      <h1>SIGN AND DELIVERY</h1>
+      <h3>Sign ID: <span id="sign">…</span></h3>
+      <p>Sign Size: <strong id="signSize">…</strong></p>
+      <p>Type:      <strong id="lastType">–</strong></p>
+      <h4>Last Installation</h4>
+      <p>By:        <strong id="lastBy">–</strong></p>
+      <p>On:        <strong id="lastWhen">–</strong></p>
+      <p>At:        <strong id="lastLocation">–</strong></p>
+      <p>Condition: <strong id="lastCondition">–</strong></p>
+      <div id="map"></div>
+      <img id="photo" alt="Sign photo">
+    </div>
+
+    <select id="installer">…</select>
+    <select id="condition">…</select>
+    <textarea id="notes" placeholder="Notes (optional)…"></textarea>
+    <button id="recordBtn">Record Installation</button>
+  </main>
+
   <script>
   document.addEventListener('DOMContentLoaded', () => {
     const MAPS_KEY  = 'AIzaSyDYOE-sqSuFAIZgMhlJtNQLdBG0jcDHILQ';
     const SCRIPT    = 'https://script.google.com/macros/s/AKfycbzExAYZaUDnLgCkG2gHYTMbfo5--jHCmhl7rTrxawQmuKsle54Pyt6dTmOnVhJ3xUaqIA/exec';
-    const qs        = new URLSearchParams(location.search);
-    const sign      = qs.get('sign')     || 'UNKNOWN';
-    const signType  = qs.get('signType') || '';
-
-    // initial UI
+    const params    = new URLSearchParams(location.search);
+    const sign      = params.get('sign')     || 'UNKNOWN';
+    const signType  = params.get('signType') || '';
     document.getElementById('sign').textContent     = sign;
     document.getElementById('signSize').textContent = signType;
 
-    // JSONP fetch callback
+    // JSONP callback
     window.renderSummary = data => {
       if (!data.timestamp) return;
       document.getElementById('lastBy').textContent        = data.installer;
@@ -45,21 +70,20 @@
       }
     };
 
-    // fire initial JSONP
-    const fetchScript = document.createElement('script');
-    fetchScript.src = `${SCRIPT}?action=fetch&sign=${encodeURIComponent(sign)}&callback=renderSummary`;
-    document.body.appendChild(fetchScript);
+    // initial fetch
+    const loader = document.createElement('script');
+    loader.src = `${SCRIPT}?action=fetch&sign=${encodeURIComponent(sign)}&callback=renderSummary`;
+    document.body.appendChild(loader);
 
-    // record-install handler
+    // record-install
     document.getElementById('recordBtn').onclick = () => {
       navigator.geolocation.getCurrentPosition(pos => {
         const lat = pos.coords.latitude, lng = pos.coords.longitude;
-        // geocode
         fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${MAPS_KEY}`)
           .then(r => r.json())
           .then(js => {
             const addr = js.results[0]?.formatted_address||'';
-            const cb   = '__logged__';
+            const cb = '__logged__';
             window[cb] = resp => {
               if (resp.status==='ok') {
                 document.getElementById('message').style.display='block';
@@ -70,22 +94,22 @@
               }
               delete window[cb];
             };
-            const params = [
+            const parts = [
               `sign=${encodeURIComponent(sign)}`,
               `signType=${encodeURIComponent(signType)}`,
               `lat=${lat}`, `lng=${lng}`,
               `address=${encodeURIComponent(addr)}`,
               `installer=${encodeURIComponent(document.getElementById('installer').value)}`,
               `notes=${encodeURIComponent(document.getElementById('notes').value)}`,
-              `type=${encodeURIComponent(qs.get('type')||'')}`,
+              `type=${encodeURIComponent(params.get('type')||'')}`,
               `condition=${encodeURIComponent(document.getElementById('condition').value)}`,
               `callback=${cb}`
             ].join('&');
             const logScript = document.createElement('script');
-            logScript.src = `${SCRIPT}?${params}`;
+            logScript.src = `${SCRIPT}?${parts}`;
             document.body.appendChild(logScript);
           });
-      }, err => alert('Location error:' + err.message));
+      }, err => alert('Location error: '+err.message));
     };
   });
   </script>
